@@ -1,0 +1,71 @@
+{
+    "endpoints": [
+        {
+            "id": 0,
+            "title": "HSM 1 Brian",
+            "maxConns": 25,
+            "websocketHost": "localhost",
+            "websocketPort": "3010",
+            "keyPressProfile": 1   
+        },
+        {
+            "id": 1,
+            "title": "HSM 2 Dave",
+            "maxConns": 25,
+            "websocketHost": "localhost",
+            "websocketPort": "3011",
+            "keyPressProfile": 2
+        }
+    ],
+
+    "keypressProfiles": [
+        {
+        "ID": 1,
+        "Connect": "1",
+        "StartTraffic": "2",
+        "StopTraffic": "3",
+        "Delay500ms:": "4",
+        "Delay1000ms": "5",
+        "Delay5000ms": "6",
+        "StopResponding": "7",
+        "StartResponding": "8"
+        },
+        {
+        "ID": 2,
+        "Connect": "q",
+        "StartTraffic": "w",
+        "StopTraffic": "e",
+        "Delay500ms:": "r",
+        "Delay1000ms": "t",
+        "Delay5000ms": "y",
+        "StopResponding": "u",
+        "StartResponding": "i"
+        },
+        {
+        "ID": 3,
+        "Connect": "a",
+        "StartTraffic": "s",
+        "StopTraffic": "d",
+        "Delay500ms:": "f",
+        "Delay1000ms": "g",
+        "Delay5000ms": "h",
+        "StopResponding": "j",
+        "StartResponding": "k"
+        },
+        {
+        "ID": 4,
+        "Connect": "z",
+        "StartTraffic": "x",
+        "StopTraffic": "c",
+        "Delay500ms:": "v",
+        "Delay1000ms": "b",
+        "Delay5000ms": "n",
+        "StopResponding": "m",
+        "StartResponding": ","
+        }
+    ]
+}
+
+
+
+			
