@@ -39,7 +39,7 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/endpoints", restManager.EndpointDiscoveryHandler).Methods("GET")
-	router.HandleFunc("/websocketRegistration", webSocketManager.Handler()).Methods("POST")
+	router.Path("/websocketRegistration/{id:[0-9]+}").HandlerFunc(webSocketManager.Handler())
 
 	synchStart := &sync.WaitGroup{}
 	endpointManager.Start(synchStart)
