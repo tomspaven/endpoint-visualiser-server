@@ -5,14 +5,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sync"
 
 	"endpoint-visualiser-server/pkg/clienthandler/rest"
 	"endpoint-visualiser-server/pkg/clienthandler/websocket"
 	"endpoint-visualiser-server/pkg/config"
-	"endpoint-visualiser-server/pkg/endpoint"
-	"endpoint-visualiser-server/pkg/event"
-	"endpoint-visualiser-server/pkg/keyboard"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -26,13 +22,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	eventChan := make(chan event.Event)
+	//eventChan := make(chan event.Event)
 
 	webSocketManager := websocket.New(websocket.WithClientRegisterer)
 	restManager := rest.New(config)
 
-	endpointManager := endpoint.NewManager(config, webSocketManager, eventChan)
-	keyListener, err := keyboard.NewListener(config, eventChan)
+	//endpointManager := endpoint.NewManager(config, webSocketManager, eventChan)
+	//keyListener, err := keyboard.NewListener(config, eventChan)
 	if err != nil {
 		fmt.Printf("KeyListener Startup Failed. Error: %s", err.Error())
 	}
@@ -41,10 +37,10 @@ func main() {
 	router.HandleFunc("/endpoints", restManager.EndpointDiscoveryHandler).Methods("GET")
 	router.Path("/websocketRegistration/{id:[0-9]+}").HandlerFunc(webSocketManager.Handler())
 
-	synchStart := &sync.WaitGroup{}
-	endpointManager.Start(synchStart)
-	keyListener.Start(synchStart)
-	synchStart.Wait()
+	//synchStart := &sync.WaitGroup{}
+	//endpointManager.Start(synchStart)
+	//keyListener.Start(synchStart)
+	//synchStart.Wait()
 
 	fmt.Printf("\nListening on port 3031")
 	log.Fatal(http.ListenAndServe(":3031", handlers.CORS(handlers.AllowedMethods([]string{"GET", "POST"}), handlers.AllowedOrigins([]string{"*"}))(router)))
