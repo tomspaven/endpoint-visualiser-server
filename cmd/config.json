@@ -1,19 +1,15 @@
 {
     "endpoints": [
         {
-            "id": 0,
+            "id": 1,
             "title": "HSM 1 Brian",
             "maxConns": 25,
-            "websocketHost": "localhost",
-            "websocketPort": "3010",
             "keyPressProfile": 1   
         },
         {
-            "id": 1,
+            "id": 2,
             "title": "HSM 2 Dave",
             "maxConns": 25,
-            "websocketHost": "localhost",
-            "websocketPort": "3011",
             "keyPressProfile": 2
         }
     ],
@@ -28,7 +24,8 @@
         "Delay1000ms": "5",
         "Delay5000ms": "6",
         "StopResponding": "7",
-        "StartResponding": "8"
+        "StartResponding": "8",
+        "Disconnect": "9"
         },
         {
         "ID": 2,
@@ -39,7 +36,8 @@
         "Delay1000ms": "t",
         "Delay5000ms": "y",
         "StopResponding": "u",
-        "StartResponding": "i"
+        "StartResponding": "i",
+        "Disconnect": "o"
         },
         {
         "ID": 3,
@@ -50,7 +48,8 @@
         "Delay1000ms": "g",
         "Delay5000ms": "h",
         "StopResponding": "j",
-        "StartResponding": "k"
+        "StartResponding": "k",
+        "Disconnect": "l"
         },
         {
         "ID": 4,
@@ -61,7 +60,8 @@
         "Delay1000ms": "b",
         "Delay5000ms": "n",
         "StopResponding": "m",
-        "StartResponding": ","
+        "StartResponding": ",",
+        "Disconnect": "."
         }
     ]
 }
