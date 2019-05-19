@@ -5,9 +5,15 @@ import (
 	"fmt"
 )
 
+type MessageID string
+
+const (
+	EndpointConnected MessageID = "EndpointConnected"
+)
+
 type EndpointConnectedMessage struct {
-	ID             int `json:"id"`
-	NumConnections int `json:"numConnections"`
+	RequestID      MessageID `json:"id"`
+	NumConnections int       `json:"numConnections"`
 }
 
 func endpointProcessor(epConfig ManagableEndpoint, clientSender func(interface{}) error, eventInChan <-chan interface{}) {
@@ -22,7 +28,7 @@ func endpointProcessor(epConfig ManagableEndpoint, clientSender func(interface{}
 			switch e.Event.(type) {
 			case event.ConnectEvent:
 				payload = EndpointConnectedMessage{
-					epConfig.ID,
+					EndpointConnected,
 					epConfig.MaxConns,
 				}
 				break

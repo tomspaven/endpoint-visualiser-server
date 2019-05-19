@@ -61,7 +61,6 @@ func buildResponse(w http.ResponseWriter, payload interface{}) {
 }
 
 func New(opts ...ManagerOption) *Manager {
-
 	manager := &Manager{clients: make(map[int]*websocket.Conn)}
 	for _, opt := range opts {
 		opt(manager)

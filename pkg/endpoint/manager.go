@@ -41,8 +41,7 @@ func NewManager(eventChan <-chan event.Event, opts ...ManagerOption) *Manager {
 	return manager
 }
 
-func (m *Manager) Start(synchStart *sync.WaitGroup) error {
-
+func (m *Manager) Start(synchStart *sync.WaitGroup) {
 	synchStart.Add(len(m.config) + 1) //  One for each endpoint and the router
 	routingMap := make(map[int]chan<- interface{})
 
@@ -55,12 +54,9 @@ func (m *Manager) Start(synchStart *sync.WaitGroup) error {
 
 	go routeEvents(m.eventInChan, routingMap)
 	synchStart.Done()
-
-	return nil
 }
 
 func routeEvents(inChan <-chan event.Event, routeMap map[int]chan<- interface{}) {
-
 	for e := range inChan {
 		fmt.Printf("\nEndpoint Manager Router Recevived event %T on inputChan, sending to endpoint %d", e.Event, e.Destination)
 
