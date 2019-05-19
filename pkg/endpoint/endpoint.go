@@ -5,15 +5,20 @@ import (
 	"fmt"
 )
 
-type MessageID string
+type messageID string
 
 const (
-	EndpointConnected MessageID = "EndpointConnected"
+	endpointConnected    messageID = "EndpointConnected"
+	endpointDisconnected messageID = "EndpointDisconnected"
 )
 
 type EndpointConnectedMessage struct {
-	RequestID      MessageID `json:"id"`
+	RequestID      messageID `json:"id"`
 	NumConnections int       `json:"numConnections"`
+}
+
+type EndpointDisconnectedMessage struct {
+	RequestID messageID `json:"id"`
 }
 
 func endpointProcessor(epConfig ManagableEndpoint, clientSender func(interface{}) error, eventInChan <-chan interface{}) {
@@ -27,11 +32,10 @@ func endpointProcessor(epConfig ManagableEndpoint, clientSender func(interface{}
 
 			switch e.Event.(type) {
 			case event.ConnectEvent:
-				payload = EndpointConnectedMessage{
-					EndpointConnected,
-					epConfig.MaxConns,
-				}
-				break
+				payload = EndpointConnectedMessage{endpointConnected, epConfig.MaxConns}
+			case event.DisconnectEvent:
+				payload = EndpointDisconnectedMessage{endpointDisconnected}
+
 			default:
 				break
 			}
