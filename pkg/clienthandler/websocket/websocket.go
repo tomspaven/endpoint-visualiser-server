@@ -92,6 +92,8 @@ func (m *Manager) sendRequestToSingleClient(id int, event interface{}) error {
 
 	bytes, err := json.Marshal(event)
 	if err == nil {
+		m.clientLock.Lock()
+		defer m.clientLock.Unlock()
 		err = m.clients[id].WriteMessage(websocket.TextMessage, bytes)
 	}
 	return err

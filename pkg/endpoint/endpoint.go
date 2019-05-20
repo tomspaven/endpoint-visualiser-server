@@ -13,6 +13,8 @@ const (
 	endpointConnected    messageID = "EndpointConnected"
 	endpointDisconnected messageID = "EndpointDisconnected"
 	endpointImpared      messageID = "EndpointImpared"
+	trafficRequest       messageID = "TrafficReqeust"
+	trafficResponse      messageID = "TrafficResponse"
 )
 
 const (
@@ -56,9 +58,11 @@ func endpointProcessor(epConfig ManagableEndpoint, clientSender ClientSender, ev
 			case event.ConnectEvent:
 				payload = EndpointConnectedMessage{endpointConnected, 16}
 				go trafficInitiator(clientSender, heartBeatGenerator, stopTrafficChan, changeDelayChan) // Start heartbeat
+				break
 			case event.DisconnectEvent:
 				stopTrafficChan <- struct{}{}
 				payload = EndpointDisconnectedMessage{endpointDisconnected}
+				break
 			case event.StartTrafficEvent:
 				stopTrafficChan <- struct{}{}                                                               // Stop heartbeat
 				go trafficInitiator(clientSender, randomMessageGenerator, stopTrafficChan, changeDelayChan) // Start traffic
@@ -74,7 +78,7 @@ func endpointProcessor(epConfig ManagableEndpoint, clientSender ClientSender, ev
 					WorstImparedResponseTime: longResponseDelayMS,
 					ImparedResponseTime:      shortResponseDelayMS,
 				}
-				continue
+				break
 			case event.DelayMediumEvent:
 				changeDelayChan <- mediumResponseDelayMS
 				payload = EndpointImpairmentMessage{
@@ -82,7 +86,7 @@ func endpointProcessor(epConfig ManagableEndpoint, clientSender ClientSender, ev
 					WorstImparedResponseTime: longResponseDelayMS,
 					ImparedResponseTime:      mediumResponseDelayMS,
 				}
-				continue
+				break
 			case event.DelayLongEvent:
 				changeDelayChan <- longResponseDelayMS
 				payload = EndpointImpairmentMessage{
@@ -90,7 +94,7 @@ func endpointProcessor(epConfig ManagableEndpoint, clientSender ClientSender, ev
 					WorstImparedResponseTime: longResponseDelayMS,
 					ImparedResponseTime:      longResponseDelayMS,
 				}
-				continue
+				break
 			case event.StopRespondingEvent:
 				changeDelayChan <- stopRespondingMS
 				payload = EndpointImpairmentMessage{
@@ -98,7 +102,7 @@ func endpointProcessor(epConfig ManagableEndpoint, clientSender ClientSender, ev
 					WorstImparedResponseTime: longResponseDelayMS,
 					ImparedResponseTime:      stopRespondingMS,
 				}
-				continue
+				break
 			case event.StartRespondingEvent:
 				changeDelayChan <- noResponseDelayMS
 				payload = EndpointImpairmentMessage{
@@ -106,11 +110,12 @@ func endpointProcessor(epConfig ManagableEndpoint, clientSender ClientSender, ev
 					WorstImparedResponseTime: longResponseDelayMS,
 					ImparedResponseTime:      noResponseDelayMS,
 				}
-				continue
+				break
 			default:
 				break
 			}
 
+			fmt.Printf("\n Sending message to client: %s", payload)
 			err := clientSender(payload)
 			if err != nil {
 				fmt.Printf("\nError sending message to client: %s", err.Error())
@@ -158,8 +163,12 @@ goRoutineLoop:
 			char, getNextMessageDelay := generateCharacter()
 			go sendMessage(clientSender, char, responseDelay)
 			nextMessageTimer := time.NewTimer(time.Duration(getNextMessageDelay()) * time.Millisecond)
-			<-nextMessageTimer.C
-			continue
+			select {
+			case <-nextMessageTimer.C:
+				continue
+			case <-stopChan:
+				break goRoutineLoop
+			}
 		}
 	}
 }
