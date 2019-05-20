@@ -61,7 +61,7 @@ func (l *Listener) populateKeyMap(config []KeyPressProfile) {
 		l.keyMap[profile.StopTrafficKey] = event.Event{Destination: profile.ID, Event: event.StopTrafficEvent{}}
 		l.keyMap[profile.DelayShortKey] = event.Event{Destination: profile.ID, Event: event.DelayShortEvent{}}
 		l.keyMap[profile.DelayMediumKey] = event.Event{Destination: profile.ID, Event: event.DelayMediumEvent{}}
-		l.keyMap[profile.DelayLongKey] = event.Event{Destination: profile.ID, Event: event.DelayLongKey{}}
+		l.keyMap[profile.DelayLongKey] = event.Event{Destination: profile.ID, Event: event.DelayLongEvent{}}
 		l.keyMap[profile.StopRespondingKey] = event.Event{Destination: profile.ID, Event: event.StopRespondingEvent{}}
 		l.keyMap[profile.StartRespondingKey] = event.Event{Destination: profile.ID, Event: event.StartRespondingEvent{}}
 		l.keyMap[profile.DisconnectKey] = event.Event{Destination: profile.ID, Event: event.DisconnectEvent{}}

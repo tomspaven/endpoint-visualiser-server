@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -12,6 +13,7 @@ import (
 
 type Manager struct {
 	registrationHandler func(w http.ResponseWriter, r *http.Request)
+	clientLock          sync.RWMutex
 	clients             map[int]*websocket.Conn
 }
 
@@ -37,7 +39,11 @@ func WithClientRegisterer(m *Manager) {
 			buildErrorResponse(w, err)
 			return
 		}
+
+		m.clientLock.Lock()
 		m.clients[id] = websocket
+		m.clientLock.Unlock()
+
 		buildResponse(w, nil)
 	}
 }

@@ -10,7 +10,7 @@ type StartTrafficEvent struct{}
 type StopTrafficEvent struct{}
 type DelayShortEvent struct{}
 type DelayMediumEvent struct{}
-type DelayLongKey struct{}
+type DelayLongEvent struct{}
 type StopRespondingEvent struct{}
 type StartRespondingEvent struct{}
 type DisconnectEvent struct{}
