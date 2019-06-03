@@ -27,17 +27,34 @@ func main() {
 		os.Exit(1)
 	}
 
+	logger, err := getLogger()
+	if err != nil {
+		fmt.Printf("Couldn't initialise log file: %s", err.Error())
+		os.Exit(1)
+	}
+
 	eventChan := make(chan event.Event)
 
-	webSocketManager := websocket.New(websocket.WithClientRegisterer)
-	restManager := rest.New(rest.WithConfig(config.Endpoints))
+	webSocketManager := websocket.New(
+		websocket.WithClientRegisterer,
+		websocket.WithLogger(logger),
+	)
+
+	restManager := rest.New(
+		rest.WithConfig(config.Endpoints),
+		rest.WithLogger(logger),
+	)
 
 	endpointManager := endpoint.NewManager(eventChan,
 		endpoint.WithConfig(copyEnpointConfig(config.Endpoints)),
-		endpoint.WithWebSocketTarget(webSocketManager))
+		endpoint.WithWebSocketTarget(webSocketManager),
+		endpoint.WithLogger(logger),
+	)
 
 	keyListener, err := keyboard.NewListener(eventChan,
-		keyboard.WithConfig(config.KeyProfiles))
+		keyboard.WithConfig(config.KeyProfiles),
+		keyboard.WithLogger(logger),
+	)
 
 	if err != nil {
 		fmt.Printf("KeyListener Startup Failed. Error: %s", err.Error())
@@ -84,4 +101,13 @@ func ReadConfig() (Config, error) {
 	var config Config
 	json.Unmarshal(fileDataBytes, &config)
 	return config, nil
+}
+
+func getLogger() (*log.Logger, error) {
+	logfile, err := os.OpenFile("log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	defer logfile.Close()
+	if err != nil {
+		return nil, err
+	}
+	return log.New(logfile, "", log.Lshortfile|log.LstdFlags), nil
 }
