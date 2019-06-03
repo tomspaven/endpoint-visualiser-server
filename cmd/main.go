@@ -21,11 +21,12 @@ import (
 
 func main() {
 
-	logger, err := getLogger()
+	logfile, err := os.OpenFile("log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Printf("Couldn't initialise log file: %s", err.Error())
 		os.Exit(1)
 	}
+	logger := log.New(logfile, "", 0)
 
 	config, err := ReadConfig()
 	if err != nil {
@@ -101,13 +102,4 @@ func ReadConfig() (Config, error) {
 	var config Config
 	json.Unmarshal(fileDataBytes, &config)
 	return config, nil
-}
-
-func getLogger() (*log.Logger, error) {
-	logfile, err := os.OpenFile("log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	defer logfile.Close()
-	if err != nil {
-		return nil, err
-	}
-	return log.New(logfile, "", log.Lshortfile|log.LstdFlags), nil
 }

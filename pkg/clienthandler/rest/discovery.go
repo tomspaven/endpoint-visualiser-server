@@ -2,12 +2,13 @@ package rest
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 )
 
 type RestManager struct {
 	config []DiscoverableEndpoint
+	logger *log.Logger
 }
 
 func New(opts ...ManagerOption) *RestManager {
@@ -32,25 +33,31 @@ func WithConfig(config []DiscoverableEndpoint) ManagerOption {
 	}
 }
 
+func WithLogger(l *log.Logger) ManagerOption {
+	return func(m *RestManager) {
+		m.logger = l
+	}
+}
+
 func (m *RestManager) EndpointDiscoveryHandler(w http.ResponseWriter, r *http.Request) {
-	buildResponse(w, m.config)
+	m.buildResponse(w, m.config)
 	return
 }
 
-func buildErrorResponse(w http.ResponseWriter, err error) {
+func (m *RestManager) buildErrorResponse(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)
-	buildResponse(w, struct {
+	m.buildResponse(w, struct {
 		Error string `json:"error"`
 	}{err.Error()})
 
 }
 
-func buildResponse(w http.ResponseWriter, payload interface{}) {
+func (m *RestManager) buildResponse(w http.ResponseWriter, payload interface{}) {
 	w.Header().Add("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	if payload != nil {
 		prettyJSON, _ := json.MarshalIndent(payload, "", "    ")
-		fmt.Printf("\nSending discovery response %s!", prettyJSON)
+		m.logger.Printf("\nSending discovery response %s!", prettyJSON)
 		json.NewEncoder(w).Encode(payload)
 	}
 }

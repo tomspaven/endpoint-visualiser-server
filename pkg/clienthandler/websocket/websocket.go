@@ -3,6 +3,7 @@ package websocket
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"sync"
@@ -15,9 +16,16 @@ type Manager struct {
 	registrationHandler func(w http.ResponseWriter, r *http.Request)
 	clientLock          sync.RWMutex
 	clients             map[int]*websocket.Conn
+	logger              *log.Logger
 }
 
 type ManagerOption func(*Manager)
+
+func WithLogger(l *log.Logger) ManagerOption {
+	return func(m *Manager) {
+		m.logger = l
+	}
+}
 
 func WithClientRegisterer(m *Manager) {
 	upgrader := websocket.Upgrader{
@@ -29,14 +37,14 @@ func WithClientRegisterer(m *Manager) {
 	m.registrationHandler = func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.Atoi(mux.Vars(r)["id"])
 		if err != nil {
-			buildErrorResponse(w, err)
+			m.buildErrorResponse(w, err)
 			return
 		}
 
-		fmt.Printf("\nReceived Registration Request for endpoint %d!", id)
+		m.logger.Printf("\nReceived Registration Request for endpoint %d!", id)
 		websocket, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			buildErrorResponse(w, err)
+			m.buildErrorResponse(w, err)
 			return
 		}
 
@@ -44,24 +52,24 @@ func WithClientRegisterer(m *Manager) {
 		m.clients[id] = websocket
 		m.clientLock.Unlock()
 
-		buildResponse(w, nil)
+		m.buildResponse(w, nil)
 	}
 }
 
-func buildErrorResponse(w http.ResponseWriter, err error) {
+func (m *Manager) buildErrorResponse(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)
-	buildResponse(w, struct {
+	m.buildResponse(w, struct {
 		Error string `json:"error"`
 	}{err.Error()})
 
 }
 
-func buildResponse(w http.ResponseWriter, payload interface{}) {
+func (m *Manager) buildResponse(w http.ResponseWriter, payload interface{}) {
 	w.Header().Add("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	if payload != nil {
 		prettyJSON, _ := json.MarshalIndent(payload, "", "    ")
-		fmt.Printf("Sending %s", prettyJSON)
+		m.logger.Printf("Sending %s", prettyJSON)
 		json.NewEncoder(w).Encode(payload)
 	}
 }

@@ -3,7 +3,7 @@ package endpoint
 import (
 	"endpoint-visualiser-server/pkg/clienthandler/websocket"
 	"endpoint-visualiser-server/pkg/event"
-	"fmt"
+	"log"
 	"sync"
 )
 
@@ -11,6 +11,7 @@ type Manager struct {
 	config           []ManagableEndpoint
 	websocketManager *websocket.Manager
 	eventInChan      <-chan event.Event
+	logger           *log.Logger
 }
 
 type ManagerOption func(*Manager)
@@ -24,6 +25,12 @@ type ManagableEndpoint struct {
 func WithConfig(config []ManagableEndpoint) ManagerOption {
 	return func(m *Manager) {
 		m.config = config
+	}
+}
+
+func WithLogger(l *log.Logger) ManagerOption {
+	return func(m *Manager) {
+		m.logger = l
 	}
 }
 
@@ -48,22 +55,22 @@ func (m *Manager) Start(synchStart *sync.WaitGroup) {
 	for _, endpoint := range m.config {
 		endpointEventInChan := make(chan interface{})
 		routingMap[endpoint.ID] = endpointEventInChan
-		go endpointProcessor(endpoint, m.websocketManager.GetSingleRequestSender(endpoint.ID), endpointEventInChan)
+		go m.endpointProcessor(endpoint, m.websocketManager.GetSingleRequestSender(endpoint.ID), endpointEventInChan)
 		synchStart.Done()
 	}
 
-	go routeEvents(m.eventInChan, routingMap)
+	go m.routeEvents(m.eventInChan, routingMap)
 	synchStart.Done()
 }
 
-func routeEvents(inChan <-chan event.Event, routeMap map[int]chan<- interface{}) {
+func (m *Manager) routeEvents(inChan <-chan event.Event, routeMap map[int]chan<- interface{}) {
 	for e := range inChan {
-		fmt.Printf("\nEndpoint Manager Router Recevived event %T on inputChan, sending to endpoint %d", e.Event, e.Destination)
+		m.logger.Printf("\nEndpoint Manager Router Recevived event %T on inputChan, sending to endpoint %d", e.Event, e.Destination)
 
 		if routeChan := routeMap[e.Destination]; routeChan != nil {
 			routeChan <- e
 			continue
 		}
-		fmt.Printf("\nYou cannot send messages to endpoint %d, it doesn't exist in your config!", e.Destination)
+		m.logger.Printf("\nYou cannot send messages to endpoint %d, it doesn't exist in your config!", e.Destination)
 	}
 }

@@ -2,7 +2,7 @@ package keyboard
 
 import (
 	"endpoint-visualiser-server/pkg/event"
-	"fmt"
+	"log"
 	"os"
 	"sync"
 )
@@ -24,6 +24,7 @@ type Listener struct {
 	config    []KeyPressProfile
 	eventChan chan<- event.Event
 	keyMap    map[string]event.Event
+	logger    *log.Logger
 }
 
 type ListenerOption func(*Listener)
@@ -31,6 +32,12 @@ type ListenerOption func(*Listener)
 func WithConfig(config []KeyPressProfile) ListenerOption {
 	return func(l *Listener) {
 		l.config = config
+	}
+}
+
+func WithLogger(lg *log.Logger) ListenerOption {
+	return func(l *Listener) {
+		l.logger = lg
 	}
 }
 
@@ -49,8 +56,8 @@ func NewListener(eventChan chan<- event.Event, opts ...ListenerOption) (*Listene
 
 func (l *Listener) Start(synchStart *sync.WaitGroup) {
 	synchStart.Add(1)
-	fmt.Printf("Starting Key Listener...")
-	go keyLogger(l.keyMap, l.eventChan)
+	l.logger.Printf("Starting Key Listener...")
+	go l.keyLogger(l.keyMap, l.eventChan)
 	synchStart.Done()
 }
 
@@ -68,22 +75,22 @@ func (l *Listener) populateKeyMap(config []KeyPressProfile) {
 	}
 }
 
-func keyLogger(keyMap map[string]event.Event, sendChan chan<- event.Event) {
+func (l *Listener) keyLogger(keyMap map[string]event.Event, sendChan chan<- event.Event) {
 	for {
 		key, _, err := GetChar()
 		if err != nil {
-			fmt.Printf("keypress error")
+			l.logger.Printf("keypress error")
 		}
 
 		// Hacky - need a way to quit the damn thing!
 		if string(key) == "`" {
-			fmt.Printf("\nReceived Termination Signal - see ya!")
+			l.logger.Printf("\nReceived Termination Signal - see ya!")
 			os.Exit(0)
 		}
 
 		event := keyMap[string(key)]
 		if event.Event != nil {
-			fmt.Printf("\nReceive KeyPress %s, sending %T event on sendchan", string(key), event.Event)
+			l.logger.Printf("\nReceive KeyPress %s, sending %T event on sendchan", string(key), event.Event)
 			sendChan <- event
 		}
 	}
