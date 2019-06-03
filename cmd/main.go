@@ -21,15 +21,15 @@ import (
 
 func main() {
 
-	config, err := ReadConfig()
-	if err != nil {
-		fmt.Printf("Failed To Read Config")
-		os.Exit(1)
-	}
-
 	logger, err := getLogger()
 	if err != nil {
 		fmt.Printf("Couldn't initialise log file: %s", err.Error())
+		os.Exit(1)
+	}
+
+	config, err := ReadConfig()
+	if err != nil {
+		fmt.Printf("Failed To Read Config")
 		os.Exit(1)
 	}
 
@@ -57,7 +57,7 @@ func main() {
 	)
 
 	if err != nil {
-		fmt.Printf("KeyListener Startup Failed. Error: %s", err.Error())
+		log.Printf("KeyListener Startup Failed. Error: %s", err.Error())
 	}
 
 	router := mux.NewRouter()
