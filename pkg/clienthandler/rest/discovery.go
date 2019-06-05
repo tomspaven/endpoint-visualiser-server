@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -12,7 +13,8 @@ type RestManager struct {
 }
 
 func New(opts ...ManagerOption) *RestManager {
-	manager := &RestManager{}
+	defaultDiscardLogger := log.New(ioutil.Discard, "", 0)
+	manager := &RestManager{logger: defaultDiscardLogger}
 	for _, opt := range opts {
 		opt(manager)
 	}

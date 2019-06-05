@@ -1,0 +1,39 @@
+Starting Key Listener...
+
+Endpoint Processor 1 started!
+
+Endpoint Processor 2 started!
+
+Received Termination Signal - see ya!
+Starting Key Listener...
+
+Endpoint Processor 2 started!
+
+Endpoint Processor 1 started!
+
+Receive KeyPress 1, sending event.ConnectEvent event on sendchan
+
+Endpoint Manager Router Recevived event event.ConnectEvent on inputChan, sending to endpoint 1
+
+Endpoint Processor 1 received message on inChan!
+
+ Sending message to client: {EndpointConnected %!s(int=16)}
+
+Error sending message to client: No client has registered to receive websocket events for endpoint 1
+
+No client has registered to receive websocket events for endpoint 1
+
+Receive KeyPress 1, sending event.ConnectEvent event on sendchan
+
+Endpoint Manager Router Recevived event event.ConnectEvent on inputChan, sending to endpoint 1
+
+Endpoint Processor 1 received message on inChan!
+
+Received Termination Signal - see ya!
+Starting Key Listener...
+
+Endpoint Processor 1 started!
+
+Endpoint Processor 2 started!
+
+Received Termination Signal - see ya!

@@ -2,6 +2,7 @@ package keyboard
 
 import (
 	"endpoint-visualiser-server/pkg/event"
+	"io/ioutil"
 	"log"
 	"os"
 	"sync"
@@ -42,7 +43,8 @@ func WithLogger(lg *log.Logger) ListenerOption {
 }
 
 func NewListener(eventChan chan<- event.Event, opts ...ListenerOption) (*Listener, error) {
-	l := &Listener{}
+	defaultDiscardLogger := log.New(ioutil.Discard, "", 0)
+	l := &Listener{logger: defaultDiscardLogger}
 	for _, opt := range opts {
 		opt(l)
 	}

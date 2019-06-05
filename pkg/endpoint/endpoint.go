@@ -24,21 +24,6 @@ const (
 	stopRespondingMS      int = -1
 )
 
-type EndpointConnectedMessage struct {
-	RequestID      messageID `json:"id"`
-	NumConnections int       `json:"numConnections"`
-}
-
-type EndpointDisconnectedMessage struct {
-	RequestID messageID `json:"id"`
-}
-
-type EndpointImpairmentMessage struct {
-	RequestID                messageID `json:"id"`
-	WorstImparedResponseTime int       `json:"worstResponse"`
-	ImparedResponseTime      int       `json:"time"`
-}
-
 type ClientSender func(interface{}) error
 
 type epState int
@@ -50,119 +35,35 @@ const (
 	epStateImpared
 )
 
-// Needs major refactoring
-func (m *Manager) endpointProcessor(epConfig ManagableEndpoint, clientSender ClientSender, eventInChan <-chan interface{}) {
+type endpointProcessingState struct {
+	endpointState     epState
+	currentDelayState int
+}
+
+func (m *Manager) endpointProcessor(epConfig ManagableEndpoint, eventInChan <-chan interface{}) {
+
 	m.logger.Printf("\nEndpoint Processor %d started!", epConfig.ID)
 
-	stopTrafficChan := make(chan struct{})
-	changeDelayChan := make(chan int)
-	endpointState := epStateDown
-	currentDelayState := noResponseDelayMS
+	sender := m.websocketManager.GetSingleRequestSender(epConfig.ID)
+	state := endpointProcessingState{
+		endpointState:     epStateDown,
+		currentDelayState: noResponseDelayMS,
+	}
 
 	for eRaw := range eventInChan {
 		m.logger.Printf("\nEndpoint Processor %d received message on inChan!", epConfig.ID)
 		if e, ok := eRaw.(event.Event); ok {
 			var payload interface{}
-			switch e.Event.(type) {
-			case event.ConnectEvent:
-				if endpointState == epStateDown {
-					payload = EndpointConnectedMessage{endpointConnected, 16}
-					go m.trafficInitiator(clientSender, heartBeatGenerator, stopTrafficChan, changeDelayChan) // Start heartbeat
-					endpointState = epStateUpWaiting
-					break
+			payload, state = m.handlerMap[e.String()].handleEvent(state, sender)
+			if payload != nil {
+				m.logger.Printf("\n Sending message to client: %s", payload)
+				err := sender(payload)
+				if err != nil {
+					m.logger.Printf("\nError sending message to client: %s", err.Error())
 				}
-				continue
-
-			case event.DisconnectEvent:
-				if endpointState != epStateDown {
-					stopTrafficChan <- struct{}{}
-					payload = EndpointDisconnectedMessage{endpointDisconnected}
-					endpointState = epStateDown
-					break
-				}
-				continue
-
-			case event.StartTrafficEvent:
-				if endpointState == epStateUpWaiting {
-					stopTrafficChan <- struct{}{}                                                                 // Stop heartbeat
-					go m.trafficInitiator(clientSender, randomMessageGenerator, stopTrafficChan, changeDelayChan) // Start traffic
-					changeDelayChan <- currentDelayState
-					endpointState = epStateUpReceiving
-				}
-				continue
-
-			case event.StopTrafficEvent:
-				if (endpointState == epStateUpReceiving) || (endpointState == epStateImpared) {
-					stopTrafficChan <- struct{}{}                                                             // Stop traffic
-					go m.trafficInitiator(clientSender, heartBeatGenerator, stopTrafficChan, changeDelayChan) // Start heartbeat
-					changeDelayChan <- currentDelayState
-					endpointState = epStateUpWaiting
-				}
-				continue
-
-			case event.DelayShortEvent:
-				changeDelayChan <- shortResponseDelayMS
-				currentDelayState = shortResponseDelayMS
-				payload = EndpointImpairmentMessage{
-					RequestID:                endpointImpaired,
-					WorstImparedResponseTime: longResponseDelayMS,
-					ImparedResponseTime:      shortResponseDelayMS,
-				}
-				break
-
-			case event.DelayMediumEvent:
-				changeDelayChan <- mediumResponseDelayMS
-				currentDelayState = mediumResponseDelayMS
-				payload = EndpointImpairmentMessage{
-					RequestID:                endpointImpaired,
-					WorstImparedResponseTime: longResponseDelayMS,
-					ImparedResponseTime:      mediumResponseDelayMS,
-				}
-				break
-
-			case event.DelayLongEvent:
-				changeDelayChan <- longResponseDelayMS
-				currentDelayState = longResponseDelayMS
-				payload = EndpointImpairmentMessage{
-					RequestID:                endpointImpaired,
-					WorstImparedResponseTime: longResponseDelayMS,
-					ImparedResponseTime:      longResponseDelayMS,
-				}
-				break
-
-			case event.StopRespondingEvent:
-				changeDelayChan <- stopRespondingMS
-				currentDelayState = stopRespondingMS
-				payload = EndpointImpairmentMessage{
-					RequestID:                endpointImpaired,
-					WorstImparedResponseTime: longResponseDelayMS,
-					ImparedResponseTime:      stopRespondingMS,
-				}
-				break
-
-			case event.StartRespondingEvent:
-				changeDelayChan <- noResponseDelayMS
-				currentDelayState = noResponseDelayMS
-				payload = EndpointImpairmentMessage{
-					RequestID:                endpointImpaired,
-					WorstImparedResponseTime: longResponseDelayMS,
-					ImparedResponseTime:      noResponseDelayMS,
-				}
-				break
-
-			default:
-				break
 			}
-
-			m.logger.Printf("\n Sending message to client: %s", payload)
-			err := clientSender(payload)
-			if err != nil {
-				m.logger.Printf("\nError sending message to client: %s", err.Error())
-			}
-
 			continue
 		}
-		//  Type assert error
 		m.logger.Printf("\nType assert error on event received by endpoint %d", epConfig.ID)
 	}
 }
@@ -188,28 +89,28 @@ func randomMessageGenerator() (character string, delayFunc func() int) {
 	return messages[genRand(0, len(messages))], nextMessageDelayFunc
 }
 
-func (m *Manager) trafficInitiator(clientSender ClientSender, generateCharacter characterGenerator, stopChan <-chan struct{}, changeDelayChan <-chan int) {
+func (m *Manager) trafficInitiator(sender ClientSender, generateCharacter characterGenerator) {
 
 	responseDelay := noResponseDelayMS
 
 goRoutineLoop:
 	for {
 		select {
-		case <-stopChan:
+		case <-m.cntl.stopChan:
 			break goRoutineLoop
-		case responseDelay = <-changeDelayChan:
+		case responseDelay = <-m.cntl.changeDelayChan:
 			continue
 		default:
 			char, getNextMessageDelay := generateCharacter()
 			errChan := make(chan error)
-			go sendMessage(clientSender, errChan, char, responseDelay)
+			go sendMessage(sender, errChan, char, responseDelay)
 			nextMessageTimer := time.NewTimer(time.Duration(getNextMessageDelay()) * time.Millisecond)
 			select {
 			case <-nextMessageTimer.C:
 				continue
-			case <-stopChan:
+			case <-m.cntl.stopChan:
 				break goRoutineLoop
-			case responseDelay = <-changeDelayChan:
+			case responseDelay = <-m.cntl.changeDelayChan:
 				continue
 			case err := <-errChan:
 				m.logger.Printf("\n%s", err.Error())

@@ -3,6 +3,7 @@ package websocket
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -75,7 +76,8 @@ func (m *Manager) buildResponse(w http.ResponseWriter, payload interface{}) {
 }
 
 func New(opts ...ManagerOption) *Manager {
-	manager := &Manager{clients: make(map[int]*websocket.Conn)}
+	defaultDiscardLogger := log.New(ioutil.Discard, "", 0)
+	manager := &Manager{clients: make(map[int]*websocket.Conn), logger: defaultDiscardLogger}
 	for _, opt := range opts {
 		opt(manager)
 	}

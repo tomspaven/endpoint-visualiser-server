@@ -3,6 +3,7 @@ package endpoint
 import (
 	"endpoint-visualiser-server/pkg/clienthandler/websocket"
 	"endpoint-visualiser-server/pkg/event"
+	"io/ioutil"
 	"log"
 	"sync"
 )
@@ -12,6 +13,13 @@ type Manager struct {
 	websocketManager *websocket.Manager
 	eventInChan      <-chan event.Event
 	logger           *log.Logger
+	cntl             controlStructures
+	handlerMap       map[string]eventHandler
+}
+
+type controlStructures struct {
+	stopChan        chan struct{}
+	changeDelayChan chan int
 }
 
 type ManagerOption func(*Manager)
@@ -41,11 +49,36 @@ func WithWebSocketTarget(target *websocket.Manager) ManagerOption {
 }
 
 func NewManager(eventChan <-chan event.Event, opts ...ManagerOption) *Manager {
-	manager := &Manager{eventInChan: eventChan}
+	defaultDiscardLogger := log.New(ioutil.Discard, "", 0)
+	manager := &Manager{
+		eventInChan: eventChan,
+		cntl: controlStructures{
+			stopChan:        make(chan struct{}),
+			changeDelayChan: make(chan int),
+		},
+		logger: defaultDiscardLogger,
+	}
+	manager.setupHandlerMap()
+
 	for _, opt := range opts {
 		opt(manager)
 	}
 	return manager
+}
+
+func (m *Manager) setupHandlerMap() {
+	handlerMap := make(map[string]eventHandler)
+	handlerMap[event.ConnectEvent{}.String()] = eventHandler{connectEventPredicate, m.connectEventAction}
+	handlerMap[event.DisconnectEvent{}.String()] = eventHandler{disconnectEventPredicate, m.disconnectEventAction}
+	handlerMap[event.StartTrafficEvent{}.String()] = eventHandler{startTrafficEventPredicate, m.startTrafficEventAction}
+	handlerMap[event.StopTrafficEvent{}.String()] = eventHandler{stopTrafficEventPredicate, m.stopTrafficEventAction}
+	handlerMap[event.DelayShortEvent{}.String()] = eventHandler{delayShortEventPredicate, m.delayShortEventAction}
+	handlerMap[event.DelayMediumEvent{}.String()] = eventHandler{delayMediumEventPredicate, m.delayMediumEventAction}
+	handlerMap[event.DelayLongEvent{}.String()] = eventHandler{delayLongEventPredicate, m.delayLongEventAction}
+	handlerMap[event.StopRespondingEvent{}.String()] = eventHandler{delayStopRespondingEventPredicate, m.delayStopRespondingEventAction}
+	handlerMap[event.StartRespondingEvent{}.String()] = eventHandler{delayStartRespondingEventPredicate, m.delayStartRespondingEventAction}
+	m.handlerMap = handlerMap
+	return
 }
 
 func (m *Manager) Start(synchStart *sync.WaitGroup) {
@@ -55,7 +88,7 @@ func (m *Manager) Start(synchStart *sync.WaitGroup) {
 	for _, endpoint := range m.config {
 		endpointEventInChan := make(chan interface{})
 		routingMap[endpoint.ID] = endpointEventInChan
-		go m.endpointProcessor(endpoint, m.websocketManager.GetSingleRequestSender(endpoint.ID), endpointEventInChan)
+		go m.endpointProcessor(endpoint, endpointEventInChan)
 		synchStart.Done()
 	}
 
