@@ -100,6 +100,6 @@ func ReadConfig() (Config, error) {
 
 	fileDataBytes, _ := ioutil.ReadAll(configFile)
 	var config Config
-	json.Unmarshal(fileDataBytes, &config)
-	return config, nil
+	err = json.Unmarshal(fileDataBytes, &config)
+	return config, err
 }
