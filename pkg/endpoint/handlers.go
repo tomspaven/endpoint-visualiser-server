@@ -1,5 +1,15 @@
 package endpoint
 
+type messageID string
+
+const (
+	endpointConnected    messageID = "EndpointConnected"
+	endpointDisconnected messageID = "EndpointDisconnected"
+	endpointImpaired     messageID = "EndpointImpaired"
+	trafficRequest       messageID = "TrafficReqeust"
+	trafficResponse      messageID = "TrafficResponse"
+)
+
 type predicate func(currentState endpointProcessingState) bool
 type actionFunc func(previousState endpointProcessingState, sender ClientSender) (payload interface{}, newState endpointProcessingState)
 

@@ -11,7 +11,7 @@
             "title": "HSM 2 Dave",
             "maxConns": 25,
             "keyPressProfile": 2
-        }
+        },
         {
             "id": 3,
             "title": "HSM 3 Andy",
@@ -20,7 +20,7 @@
         },
         {
             "id": 4,
-            "title": "HSM 3 Barry",
+            "title": "HSM 4 Barry",
             "maxConns": 25,
             "keyPressProfile": 4
         }

@@ -105,6 +105,10 @@ func (m *Manager) sendRequestToSingleClient(id int, event interface{}) error {
 		m.clientLock.Lock()
 		defer m.clientLock.Unlock()
 		err = m.clients[id].WriteMessage(websocket.TextMessage, bytes)
+		if err != nil {
+			err = fmt.Errorf("Error writing to client %d, cutting them all off! Error detail: %s", id, err.Error())
+			m.clients = make(map[int]*websocket.Conn)
+		}
 	}
 	return err
 }
